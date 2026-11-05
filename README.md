@@ -46,14 +46,4 @@ LLM 提取成本基线：中文合成样本平均约 4593 Token/份，英文 CUA
 /api/tasks/{id}	GET	查询任务状态、提取结果、Token 消耗及证据引文
 /api/tasks/{id}/reviews	POST	提交人工复核决定（认可/退回）与更正记录
 /health	GET	服务与数据库健康检查
-## 🏗️ 系统架构 (Architecture)
-```mermaid
-flowchart LR
-    API[上传接口] --> DB[(PostgreSQL任务记录)]
-    DB --> Dispatcher[持久化分发器 (Outbox)]
-    Dispatcher --> MQ[RabbitMQ]
-    MQ --> Worker[Celery Worker]
-    Worker --> Agent[DeepSeek API & 工具核验]
-    Worker --> DB
-    Worker --> Redis[(Celery 执行元数据)]
-    Poll[前端状态轮询] --> DB
+
