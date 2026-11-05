@@ -1,0 +1,72 @@
+x-app: &app
+  build: .
+  env_file: .env
+  environment:
+    DATABASE_URL: postgresql+psycopg://doc:doc@postgres:5432/doc
+    CELERY_BROKER_URL: amqp://doc:doc@rabbitmq:5672//
+    CELERY_RESULT_BACKEND: redis://redis:6379/0
+    STORAGE_DIR: /srv/data/uploads
+  volumes:
+    - uploads:/srv/data/uploads
+  restart: unless-stopped
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: doc
+      POSTGRES_PASSWORD: doc
+      POSTGRES_DB: doc
+    volumes: ["postgres_data:/var/lib/postgresql/data"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U doc -d doc"]
+      interval: 5s
+      retries: 20
+  rabbitmq:
+    image: rabbitmq:4-management-alpine
+    environment:
+      RABBITMQ_DEFAULT_USER: doc
+      RABBITMQ_DEFAULT_PASS: doc
+    volumes: ["rabbitmq_data:/var/lib/rabbitmq"]
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      retries: 20
+  redis:
+    image: redis:7-alpine
+    command: redis-server --appendonly yes
+    volumes: ["redis_data:/data"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      retries: 20
+  init:
+    <<: *app
+    command: python -m app.db
+    restart: "no"
+    depends_on:
+      postgres: {condition: service_healthy}
+  api:
+    <<: *app
+    ports: ["127.0.0.1:8000:8000"]
+    depends_on:
+      init: {condition: service_completed_successfully}
+  worker:
+    <<: *app
+    command: celery -A app.celery_app:celery_app worker -l INFO -Q documents --concurrency=2
+    depends_on:
+      init: {condition: service_completed_successfully}
+      rabbitmq: {condition: service_healthy}
+      redis: {condition: service_healthy}
+  dispatcher:
+    <<: *app
+    command: python -m app.dispatcher
+    depends_on:
+      init: {condition: service_completed_successfully}
+      rabbitmq: {condition: service_healthy}
+
+volumes:
+  uploads:
+  postgres_data:
+  rabbitmq_data:
+  redis_data:
