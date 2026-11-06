@@ -1,0 +1,15 @@
+.venv
+.git
+upstream
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.log
+data
+reports
+__pycache__
+.pytest_cache
+frontend/node_modules
+app/static/workbench

@@ -1,0 +1,17 @@
+.venv/
+__pycache__/
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.log
+data/
+upstream/
+*.sqlite*
+reports/
+frontend/node_modules/
+app/static/workbench/
